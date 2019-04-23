@@ -22,6 +22,15 @@ VerticalAnglefor32lasers = np.hstack((VerticalAngle16Lasers, VerticalAngle16Lase
 
 cosVerticalAngle = np.cos(VerticalAnglefor32lasers*np.pi/180.0)
 
+
+# this processRawData function process each package and return
+# np.array([
+# [ts0,  ts1,  ts2,  ts3,  ... , ts384 ],
+# [azi0, azi1, azi2, azi3, ... , azi384],
+# [x0,   x1,   x2,   x3,   ... , x384  ],
+# [y0,   y1,   y2,   y3,   ... , y384  ],
+# [z0,   z1,   z2,   z3,   ... , z384  ],
+# [int0, int1, int2, int3, ... , int384]])
 def processRawData(udpData):
     print "ok"
     return 0
@@ -31,7 +40,6 @@ def parsePcapGetUdp(filename, startFrame, frameNumber):
     try:
         tmpAzimuth = 0   # I am going to check the azimuth to decide which frame I need
         k = 0
-        startFlag = 0   # start record points
         rawDataperFrame = np.array([[],[],[],[],[],[]])
         m = 0
         tmp_m = 1
@@ -49,14 +57,27 @@ def parsePcapGetUdp(filename, startFrame, frameNumber):
                 tmpAzimuth = azimuthForFirstBlock
                 if k <= startFrame:
                     continue
-                tmpRawPerPkg = processRawData(ipPkt.data.data)
-                frameStartIndex = np.argsort(tmpRawPerPkg[1])[0]
+                rawDataPerPkg = processRawData(ipPkt.data.data)
+                frameStartCursor = np.argsort(rawDataPerPkg[1])[0]  # Azimuth changes from 0 - 360 degree
+
+                if frameStartCursor != 0:
+                    m = m + 1
+                    if m > frameNumber:
+                        break
+
+
+
+
+                """
                 if frameStartIndex != 0:
                     startFlag = 1
                     m = m + 1
                 if startFlag == 1 and m == tmp_m:
                     rawDataperpkg = tmpRawPerPkg[..., frameStartIndex:]
                     rawDataperFrame = np.column_stack((rawDataperpkg, rawDataperFrame))
+                """
+
+
                 if k > startFrame + frameNumber:
                     break
     except:
