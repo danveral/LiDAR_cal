@@ -37,14 +37,15 @@ def processRawData(udpData):
     return 0
 
 # startFrame should be equal or greater than 1
+# I didn't put parameters check, just use reasonable value.
 def parsePcapGetUdp(filename, startFrame, frameNumber):
     pcapHandler = dpkt.pcap.Reader(open(filename,'rb'))
     try:
         tmpAzimuth = 0   # I am going to check the azimuth to decide which frame I need
         k = 0
         rawDataperFrame = np.array([[],[],[],[],[],[]])
+        tmpFrames = []
         m = 0
-        tmp_m = 1
 
         for ts, pkt in pcapHandler:
             ethFrame = dpkt.ethernet.Ethernet(pkt)
@@ -61,28 +62,20 @@ def parsePcapGetUdp(filename, startFrame, frameNumber):
                     continue
                 rawDataPerPkg = processRawData(ipPkt.data.data)
                 frameStartCursor = np.argsort(rawDataPerPkg[1])[0]  # Azimuth changes from 0 - 360 degree
+                rawDataperpkg = rawDataPerPkg[..., frameStartCursor:]
+                rawDataperFrame = np.column_stack((rawDataperpkg, rawDataperFrame))
 
                 if frameStartCursor != 0:
                     m = m + 1
-                    if m > frameNumber:
+                    if m >= frameNumber:
                         break
-                if m >= 1:
+                    if m >= 1:
+                        tmpFrames.append(rawDataperFrame)
 
-
-
-
-                """
-                if frameStartIndex != 0:
-                    startFlag = 1
-                    m = m + 1
-                if startFlag == 1 and m == tmp_m:
-                    rawDataperpkg = tmpRawPerPkg[..., frameStartIndex:]
-                    rawDataperFrame = np.column_stack((rawDataperpkg, rawDataperFrame))
-                """
-
+        frames = np.array(tmpFrames)
     except:
         pass
-
-    return 0
+    
+    return frames
 
 parsePcapGetUdp(sys.argv[1],30,2)
