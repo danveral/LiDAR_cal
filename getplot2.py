@@ -7,6 +7,7 @@
 # the pcap should be recorded while the sensor has steady spinning
 
 # 600 RPM is needed.
+# DO NOT use pcapng, only pcap.
 
 import time, sys, os
 import dpkt
@@ -35,6 +36,7 @@ def processRawData(udpData):
     print "ok"
     return 0
 
+# startFrame should be equal or greater than 1
 def parsePcapGetUdp(filename, startFrame, frameNumber):
     pcapHandler = dpkt.pcap.Reader(open(filename,'rb'))
     try:
@@ -55,7 +57,7 @@ def parsePcapGetUdp(filename, startFrame, frameNumber):
                 if azimuthForFirstBlock < tmpAzimuth:
                     k = k + 1
                 tmpAzimuth = azimuthForFirstBlock
-                if k <= startFrame:
+                if k <= startFrame:   # the first frame would lost the first point
                     continue
                 rawDataPerPkg = processRawData(ipPkt.data.data)
                 frameStartCursor = np.argsort(rawDataPerPkg[1])[0]  # Azimuth changes from 0 - 360 degree
@@ -64,6 +66,7 @@ def parsePcapGetUdp(filename, startFrame, frameNumber):
                     m = m + 1
                     if m > frameNumber:
                         break
+                if m >= 1:
 
 
 
@@ -77,9 +80,6 @@ def parsePcapGetUdp(filename, startFrame, frameNumber):
                     rawDataperFrame = np.column_stack((rawDataperpkg, rawDataperFrame))
                 """
 
-
-                if k > startFrame + frameNumber:
-                    break
     except:
         pass
 
