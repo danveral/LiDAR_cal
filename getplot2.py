@@ -33,8 +33,8 @@ cosVerticalAngle = np.cos(VerticalAnglefor32lasers*np.pi/180.0)
 # [z0,   z1,   z2,   z3,   ... , z384  ],
 # [int0, int1, int2, int3, ... , int384]])
 def processRawData(udpData):
+    
 
-    pass
     return 0
 
 # startFrame should be equal or greater than 1
@@ -77,6 +77,6 @@ def parsePcapGetUdp(filename, startFrame, frameNumber):
     except:
         pass
 
-    return frames
+    return 0
 
 parsePcapGetUdp(sys.argv[1],30,2)
