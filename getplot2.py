@@ -24,9 +24,10 @@ VerticalAngle16Lasers = np.array([-15.0, 1.0, -13.0, 3.0, -11.0, 5.0, -9.0, 7.0,
 VerticalAnglefor32lasers = np.hstack((VerticalAngle16Lasers, VerticalAngle16Lasers))
 cosVerticalAngle = np.cos(VerticalAnglefor32lasers*np.pi/180.0)
 
-timeListForEachFiring_block = np.hstack((np.arange(16)*2.304, np.arange(16)*2.304+55.296))/110.592
+timeListForEachFiring_block = np.hstack((np.arange(16)*2.304, np.arange(16)*2.304+55.296))
+timeListForEachFiring_pkg = (np.arange(12) * 110.592).reshape((12,1)) + timeListForEachFiring_block
 
-# this processRawData function process each package and return
+# This processRawData function process each package and return
 # np.array([
 # [ts0,  ts1,  ts2,  ts3,  ... , ts384 ],
 # [azi0, azi1, azi2, azi3, ... , azi384],
@@ -35,17 +36,20 @@ timeListForEachFiring_block = np.hstack((np.arange(16)*2.304, np.arange(16)*2.30
 # [z0,   z1,   z2,   z3,   ... , z384  ],
 # [int0, int1, int2, int3, ... , int384]])
 def processRawData(udpData):
-    tmpArray = np.array([ord(i) for i in udpData[:1200]]).reshape((12,100))[...,2:]
+    # get each point's timestamp
+    timeForEachPkg = 256**3*ord(udpData[1203]) + 256**2*ord(udpData[1202]) + 256*ord(udpData[1201]) + ord(udpData[1200])
+    pointTimeStamp = timeListForEachFiring_pkg.flatten() + timeForEachPkg
 
+    # get each point's azimuth
+    tmpArray = np.array([ord(i) for i in udpData[:1200]]).reshape((12, 100))[..., 2:]
     azimuthForEachBlock = (tmpArray[:,1]*256 + tmpArray[:,0])/100.0
     t = azimuthForEachBlock[1:] - azimuthForEachBlock[:-1]
     first_11_Azimuth_Gap_ForEachBlock = np.where(t<0, t+360, t) # gap may less than 0
-
     azimuth_Gap_ForEachBlock = np.append(first_11_Azimuth_Gap_ForEachBlock,first_11_Azimuth_Gap_ForEachBlock[-1])
-    pointAzimuth_raw = (azimuth_Gap_ForEachBlock.reshape((12,1))*timeListForEachFiring_block + azimuthForEachBlock.reshape((12,1))).flatten()
+    pointAzimuth_raw = (azimuth_Gap_ForEachBlock.reshape((12,1))*timeListForEachFiring_block/110.592 + azimuthForEachBlock.reshape((12,1))).flatten()
     pointAzimuth = np.where(pointAzimuth_raw >= 360, pointAzimuth_raw-360, pointAzimuth_raw)
 
-    print pointAzimuth
+
 
     return 0
 
