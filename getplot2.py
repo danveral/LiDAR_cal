@@ -22,10 +22,9 @@ udpDestPort = 2368
 
 VerticalAngle16Lasers = np.array([-15.0, 1.0, -13.0, 3.0, -11.0, 5.0, -9.0, 7.0, -7.0, 9.0, -5.0, 11.0, -3.0, 13.0, -1.0, 15.0])
 VerticalAnglefor32lasers = np.hstack((VerticalAngle16Lasers, VerticalAngle16Lasers))
-timeListForEachFiring = np.ones(16)
-
 cosVerticalAngle = np.cos(VerticalAnglefor32lasers*np.pi/180.0)
 
+timeListForEachFiring_block = np.hstack((np.arange(16)*2.304, np.arange(16)*2.304+55.296))/110.592
 
 # this processRawData function process each package and return
 # np.array([
@@ -37,16 +36,16 @@ cosVerticalAngle = np.cos(VerticalAnglefor32lasers*np.pi/180.0)
 # [int0, int1, int2, int3, ... , int384]])
 def processRawData(udpData):
     tmpArray = np.array([ord(i) for i in udpData[:1200]]).reshape((12,100))[...,2:]
-    azimuthForEachBlock = tmpArray[:,1]*256 + tmpArray[:,0] # No divide 100 for saving calculation.
-    first_11_Azimuth_Gap_ForEachBlock = azimuthForEachBlock[1:] - azimuthForEachBlock[:-1]
+
+    azimuthForEachBlock = (tmpArray[:,1]*256 + tmpArray[:,0])/100.0
+    t = azimuthForEachBlock[1:] - azimuthForEachBlock[:-1]
+    first_11_Azimuth_Gap_ForEachBlock = np.where(t<0, t+360, t) # gap may less than 0
+
     azimuth_Gap_ForEachBlock = np.append(first_11_Azimuth_Gap_ForEachBlock,first_11_Azimuth_Gap_ForEachBlock[-1])
+    pointAzimuth_raw = (azimuth_Gap_ForEachBlock.reshape((12,1))*timeListForEachFiring_block + azimuthForEachBlock.reshape((12,1))).flatten()
+    pointAzimuth = np.where(pointAzimuth_raw >= 360, pointAzimuth_raw-360, pointAzimuth_raw)
 
-
-
-
-    print azimuthForEachBlock
-    print first_11_Azimuth_Gap_ForEachBlock
-    print azimuth_Gap_ForEachBlock
+    print pointAzimuth
 
     return 0
 
