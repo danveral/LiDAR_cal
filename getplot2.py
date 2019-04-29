@@ -60,6 +60,7 @@ def processRawData(udpData):
     pointInensity = tmpArray[..., 2:][:,2::3].flatten()
 
     ret = np.array([pointTimeStamp, pointAzimuth, pointX, pointY, pointZ, pointInensity])
+    print ret.shape
     return ret
 
 # startFrame should be equal or greater than 1
@@ -99,7 +100,6 @@ def parsePcapGetUdp(filename, startFrame, frameNumber):
                         tmpFrames.append(rawDataperFrame)
 
         frames = np.array(tmpFrames)
-        print frames.shape
     except:
         pass
 
