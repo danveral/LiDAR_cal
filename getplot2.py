@@ -23,6 +23,7 @@ udpDestPort = 2368
 VerticalAngle16Lasers = np.array([-15.0, 1.0, -13.0, 3.0, -11.0, 5.0, -9.0, 7.0, -7.0, 9.0, -5.0, 11.0, -3.0, 13.0, -1.0, 15.0])
 VerticalAnglefor32lasers = np.hstack((VerticalAngle16Lasers, VerticalAngle16Lasers))
 cosVerticalAngle = np.cos(VerticalAnglefor32lasers*np.pi/180.0)
+sinVerticalAngle = np.sin(VerticalAnglefor32lasers*np.pi/180.0)
 
 timeListForEachFiring_block = np.hstack((np.arange(16)*2.304, np.arange(16)*2.304+55.296))
 timeListForEachFiring_pkg = (np.arange(12) * 110.592).reshape((12,1)) + timeListForEachFiring_block
@@ -49,17 +50,17 @@ def processRawData(udpData):
     pointAzimuth_raw = (azimuth_Gap_ForEachBlock.reshape((12,1))*timeListForEachFiring_block/110.592 + azimuthForEachBlock.reshape((12,1))).flatten()
     pointAzimuth = np.where(pointAzimuth_raw >= 360, pointAzimuth_raw-360, pointAzimuth_raw)
 
-    # get distance
+    # get XYZ
     distArray = 0.002*(tmpArray[..., 2:][:,1::3]*256 + tmpArray[..., 2:][:,::3])
-    a = (distArray * cosVerticalAngle).flatten()
-    print a.shape
-
+    pointX = (distArray * cosVerticalAngle).flatten() * np.sin(pointAzimuth)
+    pointY = (distArray * cosVerticalAngle).flatten() * np.cos(pointAzimuth)
+    pointZ = (distArray * sinVerticalAngle).flatten()
 
     # get intensity
     pointInensity = tmpArray[..., 2:][:,2::3]
 
-
-    return 0
+    ret = np.array([pointTimeStamp, pointAzimuth, pointX, pointY, pointZ, pointInensity])
+    return ret
 
 # startFrame should be equal or greater than 1
 # I didn't put parameters check, just use reasonable value.
