@@ -49,6 +49,14 @@ def processRawData(udpData):
     pointAzimuth_raw = (azimuth_Gap_ForEachBlock.reshape((12,1))*timeListForEachFiring_block/110.592 + azimuthForEachBlock.reshape((12,1))).flatten()
     pointAzimuth = np.where(pointAzimuth_raw >= 360, pointAzimuth_raw-360, pointAzimuth_raw)
 
+    # get distance
+    distArray = 0.002*(tmpArray[..., 2:][:,1::3]*256 + tmpArray[..., 2:][:,::3])
+    a = (distArray * cosVerticalAngle).flatten()
+    print a.shape
+
+
+    # get intensity
+    pointInensity = tmpArray[..., 2:][:,2::3]
 
 
     return 0
