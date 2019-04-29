@@ -57,7 +57,7 @@ def processRawData(udpData):
     pointZ = (distArray * sinVerticalAngle).flatten()
 
     # get intensity
-    pointInensity = tmpArray[..., 2:][:,2::3]
+    pointInensity = tmpArray[..., 2:][:,2::3].flatten()
 
     ret = np.array([pointTimeStamp, pointAzimuth, pointX, pointY, pointZ, pointInensity])
     return ret
@@ -99,6 +99,7 @@ def parsePcapGetUdp(filename, startFrame, frameNumber):
                         tmpFrames.append(rawDataperFrame)
 
         frames = np.array(tmpFrames)
+        print frames.shape
     except:
         pass
 
