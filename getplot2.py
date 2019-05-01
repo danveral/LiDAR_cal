@@ -16,7 +16,6 @@ import time, sys, os
 import dpkt
 import numpy as np
 import matplotlib.pyplot as plt
-import math
 from mpl_toolkits.mplot3d import Axes3D
 
 udpDestPort = 2368
@@ -101,13 +100,29 @@ def parsePcapGetUdp(filename, startFrame, frameNumber):
                         break
                     if m >= 1:
                         tmpFrames.append(rawDataperFrame)
-
-        #frames = np.array(tmpFrames)
-        print tmpFrames[0].shape
+                        rawDataperFrame = np.array([[], [], [], [], [], []])
     except:
         pass
 
-    return 0
+    return tmpFrames
 
-parsePcapGetUdp(sys.argv[1],30,4)
+def getPlotXYZ(filename, startFrame, frameNumber, getplotfromFrame):
+    points = parsePcapGetUdp(filename, startFrame, frameNumber)
+    pointsFrame = points[getplotfromFrame]
+    x = pointsFrame[2]
+    y = pointsFrame[3]
+    z = pointsFrame[4]
+
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.scatter(x, y, z, marker='.', s=4, color='r')
+
+    ax.set_zlabel('Z')
+    ax.set_ylabel('Y')
+    ax.set_xlabel('X')
+
+    plt.show()
+
+getPlotXYZ(sys.argv[1],30,4,2)
+
 
