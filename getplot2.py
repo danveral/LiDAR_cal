@@ -2,11 +2,12 @@
 # -*- coding:utf-8 -*-
 
 # Author: Guang Ling
+# Any Question, shoot email to: 15654181@qq.com
 
 # This script is just for VLP-16 Puck (0x22)
 # the sensor should be in Strongest Return mode.  (0x37)
 # GPS synchronization is advised (0x02)
-# the pcap should be recorded while the sensor has steady spinning
+# the pcap should be recorded while the sensor has be steady spinning
 
 # 600 RPM is needed.
 # DO NOT use pcapng, only pcap.
@@ -28,7 +29,7 @@ sinVerticalAngle = np.sin(VerticalAnglefor32lasers*np.pi/180.0)
 timeListForEachFiring_block = np.hstack((np.arange(16)*2.304, np.arange(16)*2.304+55.296))
 timeListForEachFiring_pkg = (np.arange(12) * 110.592).reshape((12,1)) + timeListForEachFiring_block
 
-# This processRawData function process each package and return
+# This processRawData function process each package for pcap and return
 # np.array([
 # [ts0,  ts1,  ts2,  ts3,  ... , ts384 ],
 # [azi0, azi1, azi2, azi3, ... , azi384],
@@ -43,6 +44,7 @@ def processRawData(udpData):
 
     # get each point's azimuth
     tmpArray = np.array([ord(i) for i in udpData[:1200]]).reshape((12, 100))[..., 2:]
+    tmpArray = tmpArray*1.0
     azimuthForEachBlock = (tmpArray[:,1]*256 + tmpArray[:,0])/100.0
     t = azimuthForEachBlock[1:] - azimuthForEachBlock[:-1]
     first_11_Azimuth_Gap_ForEachBlock = np.where(t<0, t+360, t) # gap may less than 0
@@ -56,11 +58,12 @@ def processRawData(udpData):
     pointY = (distArray * cosVerticalAngle).flatten() * np.cos(pointAzimuth)
     pointZ = (distArray * sinVerticalAngle).flatten()
 
-    # get intensity
-    pointInensity = tmpArray[..., 2:][:,2::3].flatten()
+    # get intensity, change to float64
+    pointIntensity = (tmpArray[..., 2:][:,2::3].flatten())*1.0
 
-    ret = np.array([pointTimeStamp, pointAzimuth, pointX, pointY, pointZ, pointInensity])
-    print ret.shape
+    # get the final array of everything
+    ret = np.vstack((pointTimeStamp, pointAzimuth, pointX, pointY, pointZ, pointIntensity))
+
     return ret
 
 # startFrame should be equal or greater than 1
@@ -99,10 +102,12 @@ def parsePcapGetUdp(filename, startFrame, frameNumber):
                     if m >= 1:
                         tmpFrames.append(rawDataperFrame)
 
-        frames = np.array(tmpFrames)
+        #frames = np.array(tmpFrames)
+        print tmpFrames[0].shape
     except:
         pass
 
     return 0
 
-parsePcapGetUdp(sys.argv[1],30,2)
+parsePcapGetUdp(sys.argv[1],30,4)
+
