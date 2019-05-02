@@ -53,8 +53,8 @@ def processRawData(udpData):
 
     # get XYZ
     distArray = 0.002*(tmpArray[..., 2:][:,1::3]*256 + tmpArray[..., 2:][:,::3])
-    pointX = (distArray * cosVerticalAngle).flatten() * np.sin(pointAzimuth)
-    pointY = (distArray * cosVerticalAngle).flatten() * np.cos(pointAzimuth)
+    pointX = (distArray * cosVerticalAngle).flatten() * np.sin(pointAzimuth*np.pi/180.0)
+    pointY = (distArray * cosVerticalAngle).flatten() * np.cos(pointAzimuth*np.pi/180.0)
     pointZ = (distArray * sinVerticalAngle).flatten()
 
     # get intensity, change to float64
@@ -106,9 +106,28 @@ def parsePcapGetUdp(filename, startFrame, frameNumber):
 
     return tmpFrames
 
+"""
+def test(filename):
+    pcapHandler = dpkt.pcap.Reader(open(filename, 'rb'))
+    try:
+        for ts, pkt in pcapHandler:
+            ethFrame = dpkt.ethernet.Ethernet(pkt)
+            if ethFrame.type != 2048:
+                continue
+            ipPkt = ethFrame.data
+            if ipPkt.data.dport == udpDestPort:
+                udpData = ipPkt.data.data
+                rawDataPerPkg = processRawData(ipPkt.data.data)
+                #print rawDataPerPkg
+                break
+    except:
+        pass
+"""
+
 def getPlotXYZ(filename, startFrame, frameNumber, getplotfromFrame):
     points = parsePcapGetUdp(filename, startFrame, frameNumber)
     pointsFrame = points[getplotfromFrame]
+    print pointsFrame.shape
     x = pointsFrame[2]
     y = pointsFrame[3]
     z = pointsFrame[4]
@@ -124,5 +143,5 @@ def getPlotXYZ(filename, startFrame, frameNumber, getplotfromFrame):
     plt.show()
 
 getPlotXYZ(sys.argv[1],30,4,2)
-
-
+#parsePcapGetUdp(sys.argv[1],30,4)
+#test(sys.argv[1])
