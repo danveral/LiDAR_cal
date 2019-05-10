@@ -2,7 +2,6 @@
 # -*- coding:utf-8 -*-
 
 # Author: Guang Ling
-# Any Question, shoot email to: 15654181@qq.com
 
 # This script is just for VLP-16 Puck (0x22)
 # the sensor should be in Strongest Return mode.  (0x37)
@@ -30,12 +29,13 @@ timeListForEachFiring_pkg = (np.arange(12) * 110.592).reshape((12,1)) + timeList
 
 # This processRawData function process each package for pcap and return
 # np.array([
-# [ts0,  ts1,  ts2,  ts3,  ... , ts384 ],
-# [azi0, azi1, azi2, azi3, ... , azi384],
-# [x0,   x1,   x2,   x3,   ... , x384  ],
-# [y0,   y1,   y2,   y3,   ... , y384  ],
-# [z0,   z1,   z2,   z3,   ... , z384  ],
-# [int0, int1, int2, int3, ... , int384]])
+# [ts0,   ts1,   ts2,   ts3,   ... , ts384 ],      # timestamp from sensor for each point
+# [azi0,  azi1,  azi2,  azi3,  ... , azi384],      # azimuth
+# [x0,    x1,    x2,    x3,    ... , x384  ],
+# [y0,    y1,    y2,    y3,    ... , y384  ],
+# [z0,    z1,    z2,    z3,    ... , z384  ],
+# [int0,  int1,  int2,  int3,  ... , int384],      # intensity
+# [dist0, dist1, dist2, dist3, ... , dist384]])      # distance
 def processRawData(udpData):
     # get each point's timestamp
     timeForEachPkg = 256**3*ord(udpData[1203]) + 256**2*ord(udpData[1202]) + 256*ord(udpData[1201]) + ord(udpData[1200])
@@ -60,8 +60,11 @@ def processRawData(udpData):
     # get intensity, change to float64
     pointIntensity = (tmpArray[..., 2:][:,2::3].flatten())*1.0
 
+    # get the distance
+    pointDistance = distArray.flatten()
+
     # get the final array of everything
-    ret = np.vstack((pointTimeStamp, pointAzimuth, pointX, pointY, pointZ, pointIntensity))
+    ret = np.vstack((pointTimeStamp, pointAzimuth, pointX, pointY, pointZ, pointIntensity, pointDistance))
 
     return ret
 
@@ -72,7 +75,7 @@ def parsePcapGetUdp(filename, startFrame, frameNumber):
     try:
         tmpAzimuth = 0   # I am going to check the azimuth to decide which frame I need
         k = 0
-        rawDataperFrame = np.array([[],[],[],[],[],[]])
+        rawDataperFrame = np.array([[],[],[],[],[],[],[]])
         tmpFrames = []
         m = 0
 
@@ -96,17 +99,18 @@ def parsePcapGetUdp(filename, startFrame, frameNumber):
 
                 if frameStartCursor != 0:
                     m = m + 1
-                    if m >= frameNumber:
+                    if m > frameNumber:
                         break
                     if m >= 1:
+                        # because the length of the rawDataperFrame is different, so it can not be numpy array.
                         tmpFrames.append(rawDataperFrame)
-                        rawDataperFrame = np.array([[], [], [], [], [], []])
+                        rawDataperFrame = np.array([[], [], [], [], [], [], []])
     except:
         pass
 
     return tmpFrames
 
-"""
+# Temporary test for myself
 def test(filename):
     pcapHandler = dpkt.pcap.Reader(open(filename, 'rb'))
     try:
@@ -118,30 +122,31 @@ def test(filename):
             if ipPkt.data.dport == udpDestPort:
                 udpData = ipPkt.data.data
                 rawDataPerPkg = processRawData(ipPkt.data.data)
-                #print rawDataPerPkg
+                print rawDataPerPkg[6]
                 break
     except:
         pass
-"""
 
+# Visualization points cloud
+# for Matplotlib, only one frame can be shown for each time,
+# so the parameter "getplotfromFrame" is to define which frame would be display.
 def getPlotXYZ(filename, startFrame, frameNumber, getplotfromFrame):
     points = parsePcapGetUdp(filename, startFrame, frameNumber)
     pointsFrame = points[getplotfromFrame]
-    print pointsFrame.shape
     x = pointsFrame[2]
     y = pointsFrame[3]
     z = pointsFrame[4]
-
     fig = plt.figure()
     ax = Axes3D(fig)
     ax.scatter(x, y, z, marker='.', s=4, color='r')
-
     ax.set_zlabel('Z')
     ax.set_ylabel('Y')
     ax.set_xlabel('X')
 
     plt.show()
 
-getPlotXYZ(sys.argv[1],30,4,2)
-#parsePcapGetUdp(sys.argv[1],30,4)
-#test(sys.argv[1])
+
+
+#getPlotXYZ(sys.argv[1],30,4,0)
+#parsePcapGetUdp(sys.argv[1],30,10)
+test(sys.argv[1])
