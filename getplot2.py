@@ -68,7 +68,7 @@ def processRawData(udpData):
 
     return ret
 
-# startFrame should be equal or greater than 1
+# startFrame should be equal or greater than 1, My suggestion is greater than 10
 # I didn't put parameters check, just use reasonable value.
 def parsePcapGetUdp(filename, startFrame, frameNumber):
     pcapHandler = dpkt.pcap.Reader(open(filename,'rb'))
@@ -90,21 +90,24 @@ def parsePcapGetUdp(filename, startFrame, frameNumber):
                 if azimuthForFirstBlock < tmpAzimuth:
                     k = k + 1
                 tmpAzimuth = azimuthForFirstBlock
-                if k <= startFrame:   # the first frame would lost the first point
+                if k < startFrame:   # the first frame would lost the first point
                     continue
                 rawDataPerPkg = processRawData(ipPkt.data.data)
                 frameStartCursor = np.argsort(rawDataPerPkg[1])[0]  # Azimuth changes from 0 - 360 degree
                 rawDataperpkg = rawDataPerPkg[..., frameStartCursor:]
-                rawDataperFrame = np.column_stack((rawDataperpkg, rawDataperFrame))
 
                 if frameStartCursor != 0:
-                    m = m + 1
-                    if m > frameNumber:
-                        break
-                    if m >= 1:
-                        # because the length of the rawDataperFrame is different, so it can not be numpy array.
+                    if m == 0:
+                        rawDataperFrame = rawDataperpkg
+                    if m > 0:
+                        rawDataperFrame = np.column_stack((rawDataperFrame, rawDataPerPkg[..., :frameStartCursor]))
                         tmpFrames.append(rawDataperFrame)
-                        rawDataperFrame = np.array([[], [], [], [], [], [], []])
+                        rawDataperFrame = rawDataperpkg
+                    if m >= frameNumber:
+                        break
+                    m = m + 1
+                else:
+                    rawDataperFrame = np.column_stack((rawDataperFrame, rawDataperpkg))
     except:
         pass
 
@@ -113,6 +116,7 @@ def parsePcapGetUdp(filename, startFrame, frameNumber):
 # Temporary test for myself
 def test(filename):
     pcapHandler = dpkt.pcap.Reader(open(filename, 'rb'))
+    n = 0
     try:
         for ts, pkt in pcapHandler:
             ethFrame = dpkt.ethernet.Ethernet(pkt)
@@ -120,10 +124,12 @@ def test(filename):
                 continue
             ipPkt = ethFrame.data
             if ipPkt.data.dport == udpDestPort:
-                udpData = ipPkt.data.data
-                rawDataPerPkg = processRawData(ipPkt.data.data)
-                print rawDataPerPkg[6]
-                break
+                n = n + 1
+                if n < 2:
+                    udpData = ipPkt.data.data
+                    rawDataPerPkg = processRawData(ipPkt.data.data)
+                else:
+                    break
     except:
         pass
 
@@ -138,7 +144,7 @@ def getPlotXYZ(filename, startFrame, frameNumber, getplotfromFrame):
     z = pointsFrame[4]
     fig = plt.figure()
     ax = Axes3D(fig)
-    ax.scatter(x, y, z, marker='.', s=4, color='r')
+    ax.scatter(x, y, z, marker='.', s=4, color='g')
     ax.set_zlabel('Z')
     ax.set_ylabel('Y')
     ax.set_xlabel('X')
@@ -146,7 +152,6 @@ def getPlotXYZ(filename, startFrame, frameNumber, getplotfromFrame):
     plt.show()
 
 
-
-#getPlotXYZ(sys.argv[1],30,4,0)
-#parsePcapGetUdp(sys.argv[1],30,10)
-test(sys.argv[1])
+getPlotXYZ(sys.argv[1],30,4,0)
+#parsePcapGetUdp(sys.argv[1],30,11)
+#test(sys.argv[1])
